@@ -33,6 +33,10 @@ export async function POST(req: NextRequest) {
     const currentMessageContent = messages[messages.length - 1].content;
     const prompt = PromptTemplate.fromTemplate(TEMPLATE);
 
+    console.log("---001---Formatted previous messages:", formattedPreviousMessages);
+    console.log("---002---Current message content:", currentMessageContent);
+    console.log("---003---Prompt template:", TEMPLATE);
+
     /**
      * You can also try e.g.:
      *
@@ -61,12 +65,23 @@ export async function POST(req: NextRequest) {
      */
     const chain = prompt.pipe(model).pipe(outputParser);
 
-    const stream = await chain.stream({
+    // we have two options to return the response: stream the output of the chain, or await the full response and return it as JSON. 
+    // Option 1: Stream the output
+
+    // const stream = await chain.stream({
+    //   chat_history: formattedPreviousMessages.join("\n"),
+    //   input: currentMessageContent,
+    // });
+
+    // return new StreamingTextResponse(stream);
+
+    // Option 2: Await the full response
+    const response = await chain.invoke({
       chat_history: formattedPreviousMessages.join("\n"),
       input: currentMessageContent,
     });
+    return NextResponse.json({ response });
 
-    return new StreamingTextResponse(stream);
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: e.status ?? 500 });
   }
