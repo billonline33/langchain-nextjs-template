@@ -28,13 +28,26 @@ AI:`;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    /* Parse incoming messages
+        The request body contains the full chat history as an array. It splits that into:
+
+        All previous messages (everything except the last) → formatted as "role: content" strings
+        The current/latest user message → extracted as plain text
+    */
     const messages = body.messages ?? [];
     const formattedPreviousMessages = messages.slice(0, -1).map(formatMessage);
     const currentMessageContent = messages[messages.length - 1].content;
-    const prompt = PromptTemplate.fromTemplate(TEMPLATE);
-
     console.log("---001---Formatted previous messages:", formattedPreviousMessages);
     console.log("---002---Current message content:", currentMessageContent);
+    
+    /*
+       Building the propmpt
+       The PromptTemplate injects the chat history and the current message. 
+       This gives the LLM context of the whole conversation so far.
+    */
+    const prompt = PromptTemplate.fromTemplate(TEMPLATE);
+
     console.log("---003---Prompt template:", TEMPLATE);
 
     /**
@@ -68,19 +81,24 @@ export async function POST(req: NextRequest) {
     // we have two options to return the response: stream the output of the chain, or await the full response and return it as JSON. 
     // Option 1: Stream the output
 
-    // const stream = await chain.stream({
-    //   chat_history: formattedPreviousMessages.join("\n"),
-    //   input: currentMessageContent,
-    // });
-
-    // return new StreamingTextResponse(stream);
-
-    // Option 2: Await the full response
-    const response = await chain.invoke({
+    const stream = await chain.stream({
       chat_history: formattedPreviousMessages.join("\n"),
       input: currentMessageContent,
     });
-    return NextResponse.json({ response });
+
+    console.log("---004---Stream:", stream);
+    
+
+    return new StreamingTextResponse(stream);
+    // Option 1 ends here
+
+    // Option 2: Await the full response
+    // const response = await chain.invoke({
+    //   chat_history: formattedPreviousMessages.join("\n"),
+    //   input: currentMessageContent,
+    // });
+    // return NextResponse.json({ response });
+    // Option 2 ends here
 
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: e.status ?? 500 });
