@@ -11,7 +11,7 @@ import {
   ChatMessage,
   HumanMessage,
   SystemMessage,
-} from "@langchain/core/messages";
+} from "@langchain/core/messages"
 
 export const runtime = "edge";
 
@@ -55,6 +55,8 @@ export async function POST(req: NextRequest) {
      * We represent intermediate steps as system messages for display purposes,
      * but don't want them in the chat history.
      */
+
+    console.log("-----001, body.messages=", body.messages);
     const messages = (body.messages ?? [])
       .filter(
         (message: VercelChatMessage) =>
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
       )
       .map(convertVercelMessageToLangChainMessage);
 
+    console.log("-----002, messages=", messages);
     // Requires process.env.SERPAPI_API_KEY to be set: https://serpapi.com/
     // You can remove this or use a different tool instead.
     const tools = [new Calculator(), new SerpAPI()];
